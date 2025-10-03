@@ -1,0 +1,21 @@
+.chat-window {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.chat-window::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chat-window::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.4);
+  border-radius: 999px;
+}
+
+.chat-window:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.7);
+}

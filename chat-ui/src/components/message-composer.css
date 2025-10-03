@@ -1,0 +1,47 @@
+.composer {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: flex-end;
+  background-color: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 18px;
+  padding: 16px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.2);
+}
+
+.composer-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: #e2e8f0;
+  font-size: 15px;
+  line-height: 1.5;
+  resize: none;
+}
+
+.composer-input:focus {
+  outline: none;
+}
+
+.composer-submit {
+  min-width: 72px;
+  height: 42px;
+  border-radius: 999px;
+  border: none;
+  background: linear-gradient(135deg, #6366f1, #22d3ee);
+  color: #0f172a;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.12s ease-in-out, box-shadow 0.12s ease-in-out;
+}
+
+.composer-submit:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 22px rgba(79, 70, 229, 0.32);
+}
+
+.composer-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
