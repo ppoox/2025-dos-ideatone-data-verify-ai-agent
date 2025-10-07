@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Union
 
 from pathlib import Path
@@ -12,8 +13,11 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.tools import BaseTool
 from langchain_openai import ChatOpenAI
 
+from .schema import load_schema_summary
 from .settings import AgentSettings, load_settings
 from .tools import build_supabase_query_tool
+
+logger = logging.getLogger("ai_agent.agent")
 
 DEFAULT_SYSTEM_PROMPT = (
     "당신은 데이터 검증과 품질 관리 업무를 돕는 전문 AI 에이전트입니다. "
@@ -126,6 +130,8 @@ def _build_system_prompt(cfg: AgentSettings) -> str:
         cfg.supabase_schema_summary_path,
         "SUPABASE_SCHEMA_SUMMARY",
     )
+    if not schema and cfg.supabase_db_url and cfg.supabase_schema_autoload:
+        schema = _load_autoschema_summary(cfg)
     if schema:
         sections.append("다음은 주요 테이블 및 칼럼 요약입니다:\n" + schema)
 
@@ -160,6 +166,22 @@ def _resolve_prompt_section(
         return text or None
 
     return None
+
+
+def _load_autoschema_summary(cfg: AgentSettings) -> Optional[str]:
+    try:
+        summary = load_schema_summary(
+            cfg.supabase_db_url,
+            schema=cfg.supabase_schema_name,
+            max_tables=cfg.supabase_schema_max_tables,
+            max_columns=cfg.supabase_schema_max_columns,
+            include_views=cfg.supabase_schema_include_views,
+        )
+    except Exception as exc:  # noqa: BLE001 - 로깅 후 무시
+        logger.warning("Supabase 스키마 자동 로딩 실패: %s", exc)
+        return None
+
+    return summary.strip() or None
 
 
 def _extract_output_text(result: Any) -> str:

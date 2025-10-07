@@ -53,6 +53,21 @@ class AgentSettings(BaseModel):
     return_intermediate_steps: bool = Field(
         default_factory=lambda: _getenv_bool("AGENT_RETURN_INTERMEDIATE_STEPS", False)
     )
+    supabase_schema_autoload: bool = Field(
+        default_factory=lambda: _getenv_bool("SUPABASE_SCHEMA_AUTOLOAD", False)
+    )
+    supabase_schema_name: str = Field(
+        default_factory=lambda: os.getenv("SUPABASE_SCHEMA_NAME", "public")
+    )
+    supabase_schema_max_tables: int = Field(
+        default_factory=lambda: int(os.getenv("SUPABASE_SCHEMA_MAX_TABLES", 20))
+    )
+    supabase_schema_max_columns: int = Field(
+        default_factory=lambda: int(os.getenv("SUPABASE_SCHEMA_MAX_COLUMNS", 15))
+    )
+    supabase_schema_include_views: bool = Field(
+        default_factory=lambda: _getenv_bool("SUPABASE_SCHEMA_INCLUDE_VIEWS", False)
+    )
 
     def validate(self) -> None:
         """Ensure critical values are present."""
@@ -61,6 +76,10 @@ class AgentSettings(BaseModel):
             raise ValueError("OPENAI_API_KEY 환경 변수가 설정되어야 합니다.")
         if self.supabase_default_limit <= 0:
             raise ValueError("SUPABASE_DEFAULT_LIMIT 값은 1 이상이어야 합니다.")
+        if self.supabase_schema_max_tables <= 0:
+            raise ValueError("SUPABASE_SCHEMA_MAX_TABLES 값은 1 이상이어야 합니다.")
+        if self.supabase_schema_max_columns <= 0:
+            raise ValueError("SUPABASE_SCHEMA_MAX_COLUMNS 값은 1 이상이어야 합니다.")
 
 
 @lru_cache(maxsize=1)

@@ -15,6 +15,7 @@ LangChain 기반 데이터 검증 AI 에이전트를 위한 모듈입니다. Ope
 - 툴 호출 시에는 반드시 `SELECT` 쿼리를 사용하고, 필요한 경우 psycopg 스타일의 명명된 파라미터를 전달하세요.
 - 스키마 요약을 프롬프트에 포함시키고 싶다면 `SUPABASE_SCHEMA_SUMMARY`에 직접 입력하거나 `SUPABASE_SCHEMA_SUMMARY_PATH`에 요약 파일 경로를 지정하세요.
 - 데이터 검증 체크리스트는 `DATA_VALIDATION_GUIDELINES` 또는 `DATA_VALIDATION_GUIDELINES_PATH`를 통해 주입할 수 있습니다.
+- 스키마 파일이 없다면 `SUPABASE_SCHEMA_AUTOLOAD=true`로 설정해 Supabase 메타데이터에서 테이블·컬럼 정보를 자동 추출할 수 있습니다. `SUPABASE_SCHEMA_MAX_TABLES`, `SUPABASE_SCHEMA_MAX_COLUMNS`, `SUPABASE_SCHEMA_NAME`, `SUPABASE_SCHEMA_INCLUDE_VIEWS`로 범위를 조정하세요.
 
 ## 빠른 시작
 1. 필요한 패키지를 설치합니다.
@@ -32,6 +33,11 @@ LangChain 기반 데이터 검증 AI 에이전트를 위한 모듈입니다. Ope
    SUPABASE_SCHEMA_SUMMARY_PATH=./docs/schema.md  # 옵션
    DATA_VALIDATION_GUIDELINES_PATH=./docs/validation.md  # 옵션
    AGENT_RETURN_INTERMEDIATE_STEPS=true  # 옵션: 서버/CLI 응답에 중간 툴 로그 포함
+   SUPABASE_SCHEMA_AUTOLOAD=true  # 옵션: 스키마 자동 로딩 활성화
+   SUPABASE_SCHEMA_NAME=public
+   SUPABASE_SCHEMA_MAX_TABLES=20
+   SUPABASE_SCHEMA_MAX_COLUMNS=15
+   SUPABASE_SCHEMA_INCLUDE_VIEWS=false
    ```
 3. CLI에서 프롬프트를 실행해 봅니다.
    ```bash
