@@ -7,7 +7,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
-from typing import Any, List
+from typing import Any, List, Union
 
 # Ensure the repository root is on sys.path when the script is run directly.
 # PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -34,6 +34,12 @@ def main() -> int:
         type=Path,
         help="이전 대화 기록(.json). [{'role': 'user', 'content': '...'}] 형식",
     )
+    parser.add_argument(
+        "--show-steps",
+        action="store_true",
+        help="중간 도구 호출 로그를 함께 출력합니다.",
+    )
+
     args = parser.parse_args()
 
     try:
@@ -51,12 +57,20 @@ def main() -> int:
             return 1
 
     try:
-        reply = run_agent(args.prompt, history=history, settings=settings)
+        reply = run_agent(
+            args.prompt,
+            history=history,
+            settings=settings,
+            include_steps=args.show_steps,
+        )
     except Exception as exc:  # noqa: BLE001
         print(f"에이전트 실행 실패: {exc}", file=sys.stderr)
         return 1
 
-    print(reply)
+    if isinstance(reply, str):
+        print(reply)
+    else:
+        print(json.dumps(reply, ensure_ascii=False, indent=2))
     return 0
 
 
