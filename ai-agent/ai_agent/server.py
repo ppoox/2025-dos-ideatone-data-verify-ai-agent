@@ -103,10 +103,8 @@ async def chat_endpoint(payload: ChatRequest) -> ChatResponse:
         if steps:
             for idx, step in enumerate(steps, start=1):
                 tool = step.get("tool")
-                tool_input = step.get("tool_input")
+                tool_input = _redact_params(step.get("tool_input"))
                 observation = step.get("observation")
-                if tool_input:
-                    print(tool_input['sql'])
                 logger.info(
                     "[agent] step=%s tool=%s input=%s observation=%s",
                     idx,
@@ -147,3 +145,25 @@ def _serialize_intermediate_steps(steps: Any) -> List[Any]:
         serialized.append(entry)
 
     return serialized
+
+
+def _redact_params(tool_input: Any) -> Any:
+    if not isinstance(tool_input, dict):
+        return tool_input
+
+    sanitized = dict(tool_input)
+    params = sanitized.get("params")
+    if isinstance(params, dict):
+        sanitized["params"] = {k: _truncate_value(
+            v) for k, v in params.items()}
+    return sanitized
+
+
+def _truncate_value(value: Any, *, limit: int = 120) -> Any:
+    if isinstance(value, (int, float, bool)) or value is None:
+        return value
+
+    text = str(value)
+    if len(text) <= limit:
+        return text
+    return text[: limit - 1] + "…"

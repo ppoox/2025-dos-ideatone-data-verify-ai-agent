@@ -10,12 +10,19 @@ LangChain 기반 데이터 검증 AI 에이전트를 위한 모듈입니다. Ope
 - `scripts/run_agent.py`: CLI에서 프롬프트를 테스트할 수 있는 스크립트
 
 ## Supabase/PostgreSQL 연동
-- `.env`에 `SUPABASE_DB_URL`을 설정하면 에이전트가 Supabase PostgreSQL DB를 조회하는 `query_supabase_sql` 툴을 자동으로 로드합니다.
+- `.env`에 `SUPABASE_DB_URL`을 설정하거나 `SUPABASE_DOMAIN_CONFIG`로 도메인별 연결·스키마 정보를 선언하면 `query_supabase_sql` 툴이 자동으로 로드됩니다.
+- 툴은 `domain`/`schema` 파라미터를 지원하므로 도메인별로 분리된 스키마를 명시적으로 조회할 수 있습니다.
 - 기본 최대 조회 행 수는 `SUPABASE_DEFAULT_LIMIT`(기본 100)으로, 쿼리에 `LIMIT`가 없을 경우 적용됩니다.
-- 툴 호출 시에는 반드시 `SELECT` 쿼리를 사용하고, 필요한 경우 psycopg 스타일의 명명된 파라미터를 전달하세요.
-- 스키마 요약을 프롬프트에 포함시키고 싶다면 `SUPABASE_SCHEMA_SUMMARY`에 직접 입력하거나 `SUPABASE_SCHEMA_SUMMARY_PATH`에 요약 파일 경로를 지정하세요.
-- 데이터 검증 체크리스트는 `DATA_VALIDATION_GUIDELINES` 또는 `DATA_VALIDATION_GUIDELINES_PATH`를 통해 주입할 수 있습니다.
+- 툴 호출 시에는 반드시 `SELECT` 또는 `WITH`로 시작하는 읽기 전용 쿼리만 사용하고, 필요한 경우 psycopg 스타일의 명명된 파라미터를 전달하세요.
+- 실행된 SQL은 `AGENT_NL2SQL_LOG_FILE`(기본 `logs/nl2sql.log`)에 JSON 라인 형태로 기록되어 NL2SQL 이력을 추적할 수 있습니다.
+- 스키마/검증 체크리스트/용어집은 기본적으로 Supabase 벡터 테이블 설정(`SUPABASE_KNOWLEDGE_*`)을 통해 RAG로 로드되며, 환경 변수(`SUPABASE_SCHEMA_SUMMARY`, `DATA_VALIDATION_GUIDELINES`, `DATA_GLOSSARY`)나 샘플 파일은 폴백 용도로만 사용됩니다.
 - 스키마 파일이 없다면 `SUPABASE_SCHEMA_AUTOLOAD=true`로 설정해 Supabase 메타데이터에서 테이블·컬럼 정보를 자동 추출할 수 있습니다. `SUPABASE_SCHEMA_MAX_TABLES`, `SUPABASE_SCHEMA_MAX_COLUMNS`, `SUPABASE_SCHEMA_NAME`, `SUPABASE_SCHEMA_INCLUDE_VIEWS`로 범위를 조정하세요.
+
+## Knowledge Base (RAG)
+- Supabase PostgreSQL 벡터 테이블(`SUPABASE_KNOWLEDGE_TABLE`)에서 `topic`, `content`, `embedding` 컬럼을 준비해 `schema_summary`, `validation_guidelines`, `data_glossary` 등에 해당하는 문서를 저장하세요.
+- 에이전트는 `OPENAI_EMBEDDING_MODEL`(기본 `text-embedding-3-small`)을 이용해 쿼리 힌트를 임베딩하고 pgvector `<->` 연산으로 최적의 문서를 선택합니다.
+- `SUPABASE_KNOWLEDGE_TOP_K`로 각 토픽에 대해 불러올 문서 수를 조절하며, `SUPABASE_KNOWLEDGE_METADATA_COLUMN`이 존재하면 메타데이터를 프롬프트에 함께 표기합니다.
+- 벡터 리소스를 준비하지 않은 경우에만 `*_PATH` 환경 변수를 통해 정적 파일을 폴백으로 사용하세요.
 
 ## 빠른 시작
 1. 필요한 패키지를 설치합니다.
@@ -28,16 +35,28 @@ LangChain 기반 데이터 검증 AI 에이전트를 위한 모듈입니다. Ope
    ```
    Supabase를 사용할 경우 다음처럼 환경 변수를 추가합니다.
    ```env
+   OPENAI_EMBEDDING_MODEL=text-embedding-3-small
    SUPABASE_DB_URL=postgresql://postgres:password@db.xxxxxx.supabase.co:5432/postgres
    SUPABASE_DEFAULT_LIMIT=200  # 옵션
-   SUPABASE_SCHEMA_SUMMARY_PATH=./docs/schema.md  # 옵션
-   DATA_VALIDATION_GUIDELINES_PATH=./docs/validation.md  # 옵션
+   SUPABASE_KNOWLEDGE_TABLE=agent_knowledge
+   SUPABASE_KNOWLEDGE_DOMAIN=metadata
+   SUPABASE_KNOWLEDGE_SCHEMA=metadata
+   SUPABASE_KNOWLEDGE_TOPIC_COLUMN=topic
+   SUPABASE_KNOWLEDGE_CONTENT_COLUMN=content
+   SUPABASE_KNOWLEDGE_EMBEDDING_COLUMN=embedding
+   SUPABASE_KNOWLEDGE_METADATA_COLUMN=metadata
+   SUPABASE_KNOWLEDGE_TOP_K=3
+   SUPABASE_SCHEMA_SUMMARY_PATH=./docs/schema.md  # 폴백용
+   DATA_VALIDATION_GUIDELINES_PATH=./docs/validation.md  # 폴백용
+   DATA_GLOSSARY_PATH=./docs/glossary.md  # 폴백용
    AGENT_RETURN_INTERMEDIATE_STEPS=true  # 옵션: 서버/CLI 응답에 중간 툴 로그 포함
    SUPABASE_SCHEMA_AUTOLOAD=true  # 옵션: 스키마 자동 로딩 활성화
    SUPABASE_SCHEMA_NAME=public
    SUPABASE_SCHEMA_MAX_TABLES=20
    SUPABASE_SCHEMA_MAX_COLUMNS=15
    SUPABASE_SCHEMA_INCLUDE_VIEWS=false
+   SUPABASE_DOMAIN_CONFIG=[{"domain":"billing","schema":"billing"},{"domain":"usage","schema":"usage","connection_uri":"postgresql://..."}]
+   AGENT_NL2SQL_LOG_FILE=logs/nl2sql.log
    ```
 3. CLI에서 프롬프트를 실행해 봅니다.
    ```bash
