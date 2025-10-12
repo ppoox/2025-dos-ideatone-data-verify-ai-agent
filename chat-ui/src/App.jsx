@@ -33,6 +33,10 @@ function App() {
       return
     }
 
+    const historyPayload = messages
+      .filter((msg) => msg.role === 'user' || msg.role === 'assistant')
+      .map((msg) => ({ role: msg.role, content: msg.content }))
+
     const userMessage = {
       id: getId(),
       role: 'user',
@@ -48,10 +52,14 @@ function App() {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ prompt: trimmed })
+        body: JSON.stringify({
+          prompt: trimmed,
+          history: historyPayload
+        })
       })
 
       if (!response.ok) {
+        console.log(response)
         throw new Error(`Server responded with ${response.status}`)
       }
 
